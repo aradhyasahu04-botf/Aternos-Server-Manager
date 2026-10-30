@@ -1,17 +1,24 @@
+import os
 import discord
 from discord.ext import commands
 from python_aternos import Client, ClientError
 
-# Configuration - Replace with your actual details
-DISCORD_TOKEN = "YOUR_DISCORD_BOT_TOKEN"
-ATERNOS_USERNAME = "YOUR_ATERNOS_USERNAME"
-ATERNOS_PASSWORD = "YOUR_ATERNOS_PASSWORD"
-SERVER_INDEX = 0  # 0 is your first server on Aternos
+# Configuration
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+ATERNOS_USERNAME = os.getenv("ATERNOS_USERNAME")
+ATERNOS_PASSWORD = os.getenv("ATERNOS_PASSWORD")
+SERVER_INDEX = int(os.getenv("SERVER_INDEX", 0))
+
+# Replace this with your actual Discord text channel ID (Turn on Developer Mode -> Right-click channel -> Copy ID)
+ALLOWED_CHANNEL_ID = 123456789012345678  
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
 def get_aternos_server():
     """Logs into Aternos and retrieves the target server."""
+    if not ATERNOS_USERNAME or not ATERNOS_PASSWORD:
+        raise Exception("Aternos credentials are not set in environment variables.")
+    
     aternos_client = Client.from_credentials(ATERNOS_USERNAME, ATERNOS_PASSWORD)
     servers = aternos_client.list_servers()
     if not servers:
@@ -25,6 +32,11 @@ async def on_ready():
 @bot.command(name="start")
 async def start_server(ctx):
     """Command to start the Aternos server."""
+    # Channel restriction check
+    if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
+        await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
+        return
+
     await ctx.send("⌛ Connecting to Aternos and starting the server...")
     try:
         server = get_aternos_server()
@@ -45,6 +57,10 @@ async def start_server(ctx):
 @bot.command(name="status")
 async def server_status(ctx):
     """Command to check server status."""
+    if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
+        await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
+        return
+
     try:
         server = get_aternos_server()
         await ctx.send(f"📊 **Server Status:** `{server.status}` | **Players:** {server.players_count}/{server.slots}")
@@ -54,6 +70,10 @@ async def server_status(ctx):
 @bot.command(name="stop")
 async def stop_server(ctx):
     """Command to stop the server."""
+    if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
+        await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
+        return
+
     try:
         server = get_aternos_server()
         server.stop()
@@ -61,4 +81,8 @@ async def stop_server(ctx):
     except Exception as e:
         await ctx.send(f"❌ Error: {e}")
 
-bot.run(DISCORD_TOKEN)
+if __name__ == "__main__":
+    if not DISCORD_TOKEN:
+        print("❌ Error: DISCORD_TOKEN environment variable is missing.")
+    else:
+        bot.run(DISCORD_TOKEN)
