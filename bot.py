@@ -10,7 +10,7 @@ ATERNOS_PASSWORD = os.getenv("ATERNOS_PASSWORD")
 SERVER_INDEX = int(os.getenv("SERVER_INDEX", 0))
 
 # Replace this with your actual Discord text channel ID (Turn on Developer Mode -> Right-click channel -> Copy ID)
-ALLOWED_CHANNEL_ID = 123456789012345678  
+ALLOWED_CHANNEL_ID = 1542485989656887317 
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
