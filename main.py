@@ -1,35 +1,35 @@
 import os
 import discord
 from discord.ext import commands
-from py_aternos import Client
+import requests
 
 # Configuration - Loaded securely from environment variables
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 ATERNOS_SESSION = os.getenv("ATERNOS_SESSION")
-SERVER_INDEX = int(os.getenv("SERVER_INDEX", 0))
-
-# Optional: Restrict commands to a specific channel ID (Leave None for all channels)
-ALLOWED_CHANNEL_ID = None  
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-def get_aternos_server():
-    """Logs into Aternos using the py-aternos client and your session cookie."""
+def aternos_request(endpoint):
+    """Sends a lightweight direct request to the Aternos panel using your session cookie."""
     if not ATERNOS_SESSION:
         raise Exception("ATERNOS_SESSION is not set in environment variables.")
+        
+    url = f"https://aternos.org/panel/ajax/{endpoint}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://aternos.org/server/",
+        "Cookie": f"ATERNOS_SESSION={ATERNOS_SESSION}"
+    }
     
-    print("LOG: Initializing py-aternos client...")
-    aternos_client = Client()
-    aternos_client.login_with_session(ATERNOS_SESSION)
-    
-    servers = aternos_client.account.list_servers()
-    if not servers:
-        raise Exception("No servers found on this Aternos account.")
-    
-    return servers[SERVER_INDEX]
+    try:
+        response = requests.get(url, headers=headers)
+        return response.json()
+    except Exception as e:
+        print(f"Request error: {e}")
+        return {"success": False, "error": str(e)}
 
 @bot.event
 async def on_ready():
@@ -41,61 +41,39 @@ async def on_ready():
 @bot.command(name="start")
 async def start_server(ctx):
     print(f"COMMAND EXECUTED: !start by {ctx.author}")
+    await ctx.send("⌛ Sending start signal to Aternos...")
     
-    if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
-        await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
-        return
-
-    await ctx.send("⌛ Connecting to Aternos...")
-    try:
-        server = get_aternos_server()
-        if server.status == "online":
-            await ctx.send("🟢 Server is already online!")
-            return
-        elif server.status == "starting":
-            await ctx.send("🟡 Server is already starting!")
-            return
-            
-        server.start()
-        print("SUCCESS: Start signal sent successfully via py-aternos.")
+    data = aternos_request("start.php")
+    if data.get("success") or data.get("done") or not data.get("error"):
+        print("SUCCESS: Start signal sent successfully.")
         await ctx.send("🚀 **Server start command sent successfully!**")
-    except Exception as e:
-        print(f"EXCEPT: Failed to start - {e}")
-        await ctx.send(f"❌ Error: {e}")
+    else:
+        err = data.get("error", "Unknown error")
+        print(f"EXCEPT: Failed to start - {err}")
+        await ctx.send(f"❌ Error starting server: {err}")
 
 @bot.command(name="status")
 async def server_status(ctx):
     print(f"COMMAND EXECUTED: !status by {ctx.author}")
     
-    if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
-        await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
-        return
-
-    try:
-        server = get_aternos_server()
-        status_msg = f"📊 **Server Status:** `{server.status}` | **Players:** {server.players_count}/{server.slots}"
-        print(f"STATUS REPORT: {server.status} ({server.players_count}/{server.slots} players)")
-        await ctx.send(status_msg)
-    except Exception as e:
-        print(f"EXCEPT: Failed to fetch status - {e}")
-        await ctx.send(f"❌ Error fetching status: {e}")
+    data = aternos_request("status.php")
+    # Aternos status responses can vary slightly in structure, extract safely
+    info = data if "status" in data else data.get("data", {})
+    status = info.get("status", "unknown")
+    players = info.get("players", 0)
+    slots = info.get("slots", 0)
+    
+    print(f"STATUS REPORT: Status -> {status} ({players}/{slots} players)")
+    await ctx.send(f"📊 **Server Status:** `{status}` | **Players:** `{players}/{slots}`")
 
 @bot.command(name="stop")
 async def stop_server(ctx):
     print(f"COMMAND EXECUTED: !stop by {ctx.author}")
+    await ctx.send("🛑 Sending stop signal to Aternos...")
     
-    if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
-        await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
-        return
-
-    try:
-        server = get_aternos_server()
-        server.stop()
-        print("SUCCESS: Stop signal sent successfully via py-aternos.")
-        await ctx.send("🛑 Server stop signal sent.")
-    except Exception as e:
-        print(f"EXCEPT: Failed to stop - {e}")
-        await ctx.send(f"❌ Error: {e}")
+    data = aternos_request("stop.php")
+    print("SUCCESS: Stop signal sent.")
+    await ctx.send("🛑 Server stop signal sent.")
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
