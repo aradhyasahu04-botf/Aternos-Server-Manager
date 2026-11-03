@@ -1,5 +1,4 @@
-
-   import os
+import os
 import discord
 from discord.ext import commands
 from py_aternos import Client
