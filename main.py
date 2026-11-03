@@ -4,7 +4,7 @@ from discord.ext import commands
 import requests
 
 # Configuration - Loaded securely from environment variables
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN = MTU2NTYzNDkzMzMyNDUyMTU4Mg.Gk8XHd.mqCCZUkHD8NO_91f48Q4he56mj4BsaJYbKQp28
 ATERNOS_SESSION = os.getenv("ATERNOS_SESSION")
 
 intents = discord.Intents.default()
