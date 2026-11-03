@@ -5,12 +5,10 @@ from python_aternos import Client
 
 # Configuration - Loaded securely from environment variables
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-ATERNOS_USERNAME = os.getenv("ATERNOS_USERNAME")
-ATERNOS_PASSWORD = os.getenv("ATERNOS_PASSWORD")
+ATERNOS_SESSION = os.getenv("ATERNOS_SESSION")  # Paste your cookie value here or set it in your panel
 SERVER_INDEX = int(os.getenv("SERVER_INDEX", 0))
 
 # Optional: Replace with your actual Discord text channel ID if you want to restrict commands.
-# Leave as None if you want commands to work in any channel.
 ALLOWED_CHANNEL_ID = None  # Example: 123456789012345678
 
 # Enable Privileged Message Content Intent so the bot can read commands
@@ -20,13 +18,13 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 def get_aternos_server():
-    """Logs into Aternos and retrieves the target server."""
-    if not ATERNOS_USERNAME or not ATERNOS_PASSWORD:
-        raise Exception("Aternos credentials are not set in environment variables.")
+    """Logs into Aternos using the browser session cookie and retrieves the target server."""
+    if not ATERNOS_SESSION:
+        raise Exception("ATERNOS_SESSION is not set in environment variables.")
     
-    # Correct login method for python-aternos
     aternos_client = Client()
-    aternos_client.login(ATERNOS_USERNAME, ATERNOS_PASSWORD)
+    # Log in using the session cookie value you copied from Chrome
+    aternos_client.login_with_session(ATERNOS_SESSION)
     
     servers = aternos_client.account.list_servers()
     if not servers:
@@ -91,4 +89,3 @@ if __name__ == "__main__":
         print("❌ Error: DISCORD_TOKEN environment variable is missing.")
     else:
         bot.run(DISCORD_TOKEN)
-        
