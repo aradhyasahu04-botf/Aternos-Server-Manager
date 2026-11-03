@@ -1,4 +1,3 @@
 discord.py
-py-aternos
 python-dotenv
-lxml==4.9.2
+requests
