@@ -38,6 +38,8 @@ async def on_ready():
 @bot.command(name="start")
 async def start_server(ctx):
     """Command to start the Aternos server."""
+    print(f"COMMAND RECEIVED: !start invoked by {ctx.author}")  # This will show up in your Bot-Hosting console
+    
     if ALLOWED_CHANNEL_ID and ctx.channel.id != ALLOWED_CHANNEL_ID:
         await ctx.send(f"❌ You can only use this command in <#{ALLOWED_CHANNEL_ID}>!", delete_after=5)
         return
@@ -45,6 +47,8 @@ async def start_server(ctx):
     await ctx.send("⌛ Connecting to Aternos and starting the server...")
     try:
         server = get_aternos_server()
+        print(f"Successfully retrieved Aternos server status: {server.status}") # Console log
+        
         if server.status == "online":
             await ctx.send("🟢 Server is already online!")
             return
@@ -55,6 +59,7 @@ async def start_server(ctx):
         server.start()
         await ctx.send("🚀 **Server start command sent!** It may take a few minutes to boot up.")
     except Exception as e:
+        print(f"ERROR starting server: {e}") # Console log for debugging
         await ctx.send(f"❌ Error: {e}")
 
 @bot.command(name="status")
