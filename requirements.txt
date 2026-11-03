@@ -1,4 +1,4 @@
 discord.py
-python-aternos
+py-aternos
 python-dotenv
-lxml>=5.2.0
+lxml==4.9.2
