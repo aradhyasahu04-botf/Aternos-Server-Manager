@@ -1,3 +1,4 @@
 discord.py
 python-aternos
 python-dotenv
+lxml>=5.2.0
